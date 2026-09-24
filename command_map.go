@@ -1,51 +1,40 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
 )
 
-type ApiRes struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
-	Results  []location
+func commandMapf(cfg *config) error {
+	locationsResp, err := cfg.pokeapiClient.ListLocations(cfg.nextLocationsURL)
+	if err != nil {
+		return err
+	}
+
+	cfg.nextLocationsURL = locationsResp.Next
+	cfg.prevLocationsURL = locationsResp.Previous
+
+	for _, loc := range locationsResp.Results {
+		fmt.Println(loc.Name)
+	}
+	return nil
 }
 
-type location struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
-}
-
-func commandMap(cfg *config) error {
-	res, err := http.Get(cfg.NextUrl)
-	if err != nil {
-		return err
+func commandMapb(cfg *config) error {
+	if cfg.prevLocationsURL == nil {
+		return errors.New("you're on the first page")
 	}
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
 
-	if res.StatusCode > 299 {
-		return fmt.Errorf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}
+	locationResp, err := cfg.pokeapiClient.ListLocations(cfg.prevLocationsURL)
 	if err != nil {
 		return err
 	}
 
-	var response ApiRes
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return err
+	cfg.nextLocationsURL = locationResp.Next
+	cfg.prevLocationsURL = locationResp.Previous
+
+	for _, loc := range locationResp.Results {
+		fmt.Println(loc.Name)
 	}
-
-	cfg.PreviousUrl = response.Previous
-	cfg.NextUrl = response.Next
-
-	for _, location := range response.Results {
-		fmt.Println(location.Name)
-	}
-
 	return nil
 }
