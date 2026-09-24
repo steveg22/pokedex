@@ -13,7 +13,9 @@ type cliCommand struct {
 }
 
 type config struct {
-	commands map[string]cliCommand
+	Commands    map[string]cliCommand
+	NextUrl     string
+	PreviousUrl string
 }
 
 func startRepl(cfg *config) {
@@ -34,7 +36,7 @@ func startRepl(cfg *config) {
 
 		commandName := words[0]
 
-		command, exists := cfg.commands[commandName]
+		command, exists := cfg.Commands[commandName]
 		if exists {
 			err := command.callback(cfg)
 			if err != nil {
@@ -51,7 +53,9 @@ func startRepl(cfg *config) {
 
 func main() {
 	config := config{
-		commands: map[string]cliCommand{
+		NextUrl:     "https://pokeapi.co/api/v2/location-area/",
+		PreviousUrl: "",
+		Commands: map[string]cliCommand{
 			"help": {
 				name:        "help",
 				description: "Displays a help message",
@@ -61,6 +65,16 @@ func main() {
 				name:        "exit",
 				description: "Exit the Pokedex",
 				callback:    commandExit,
+			},
+			"map": {
+				name:        "map",
+				description: "Displays the names of 20 location areas in the Pokemon world",
+				callback:    commandMap,
+			},
+			"mapb": {
+				name:        "map-back",
+				description: "Displays the names of the previous 20 location areas in the Pokemon world",
+				callback:    commandMapb,
 			},
 		},
 	}
